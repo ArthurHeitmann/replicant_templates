@@ -37,7 +37,7 @@ typedef struct {
 
 	FSeek( header.bonesStartOffset + header.offsetToBones );
 	struct {
-	struct {
+	struct Bone {
 		local uint32 nameStartOffset = FTell();
 		uint32  offsetToName;
 		local uint32 returnPos = FTell();
@@ -61,12 +61,12 @@ typedef struct {
 			float y;
 			float z;
 		} localPosition;
-	} bone[header.boneCount] <optimize=false>;
+	} bone[header.boneCount] <optimize=false, read=readBone>;
 	} bones;
 
 	FSeek( header.bonesDataStartOffset + header.offsetToBonesData );
 	struct {
-	struct {
+	struct BoneData {
 		local uint32 nameStartOffset = FTell();
 		uint32  offsetToName;
 		local uint32 returnPos = FTell();
@@ -77,7 +77,7 @@ typedef struct {
 		float	length;
 		float   unknownMatrix0[16];
 		float   unknownMatrix1[16];
-	} boneData[header.boneDataCount] <optimize=false>;
+	} boneData[header.boneDataCount] <optimize=false, read=readBoneData>;
 	} bonesData;
 
 	FSeek( header.objectGroupsStartOffset + header.offsetToObjectGroups );
@@ -147,3 +147,10 @@ typedef struct {
 	} object[header.objectCount] <optimize=false>;
 	} objects;
 } tpGxMeshHead;
+
+string readBone(Bone &bone) {
+	return bone.name;
+}
+string readBoneData(BoneData &boneData) {
+	return boneData.name;
+}

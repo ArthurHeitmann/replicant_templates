@@ -74,31 +74,45 @@ if (header.assetPackCount != 0) {
     } assetPacks;
 }
 
+struct File;
+string readName(const File& file) {
+    return file.name;
+};
+
+struct File {
+    uint32  hash<format=hex>;
+    local uint32 nameStartOffset = FTell();
+    uint32  offsetToName;
+    uint32  fileSize;
+    local uint32 contentStartOffset = FTell();
+    uint32  offsetToContentStart;
+    uint32  assetsDataHash <format=hex>;
+    local uint32 returnPos = FTell();
+    FSeek(nameStartOffset + offsetToName);
+    string name;  
+    FSeek(contentStartOffset + offsetToContentStart);
+    char id[4];
+    FSkip(-4);
+    if (id == "BXON") {
+        #include "BXON.bt"
+    } else if (id == "CJF") {
+        #include "CJF.bt"
+    } else if (id == "KPK\x7f") {
+        #include "KPK.bt"
+    } else {
+        byte data[fileSize];
+    }
+
+    FSeek(returnPos);
+};
+
+
 if (header.fileCount != 0) {
     FSeek( header.filesStartOffset + header.offsetToFiles );
     struct {
-        struct {
-            uint32  hash<format=hex>;
-            local uint32 nameStartOffset = FTell();
-            uint32  offsetToName;
-            uint32  fileSize;
-            local uint32 contentStartOffset = FTell();
-            uint32  offsetToContentStart;
-            uint32  assetsDataHash <format=hex>;
-            local uint32 returnPos = FTell();
-            FSeek(nameStartOffset + offsetToName);
-            string name;  
-            FSeek(contentStartOffset + offsetToContentStart);
-            char id[4];
-            FSkip(-4);
-            if (id == "BXON") {
-                #include "BXON.bt"
-            } else if (id == "CJF") {
-                #include "CJF.bt"
-            }
-
-            FSeek(returnPos);
-        } file[header.fileCount] <optimize=false>;
+        local int i;
+        for (i = 0; i < header.fileCount; i++)
+            File file <read=readName>;
     } files;
 
     if (header.packFileResourceSize != 0) {
@@ -118,4 +132,23 @@ if (header.fileCount != 0) {
 	        } assetsData <optimize=false>;
 	    }
     }   
+}
+
+string readVec2(Vec2 &vec) {
+    string s = "";
+    SPrintf(s, "%g %g", vec.x, vec.y);
+    return s;
+}
+string readVec3(Vec3 &vec) {
+	string s = "";
+    SPrintf(s, "%g %g %g", vec.x, vec.y, vec.z);
+    return s;
+}
+string readVec4(Vec4 &vec) {
+    string s = "";
+    SPrintf(s, "%g %g %g %g", vec.x, vec.y, vec.z, vec.w);
+    return s;
+}
+string readString(String &str) {
+    return str.str;
 }

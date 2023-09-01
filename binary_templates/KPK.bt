@@ -1,0 +1,107 @@
+
+struct CmfData;
+struct KeyFrameData;
+struct BoneNames;
+struct String;
+struct Vec2;
+struct Vec3;
+struct Vec4;
+
+struct KPK {
+	local int basePos = FTell();
+	char magic[4];
+	uint32 count;
+	uint32 null;
+	uint32 offsets[count];
+	uint32 sizes[count];
+
+	local int i;
+	for (i = 0; i < count; i++) {
+		FSeek(basePos + offsets[i]);
+		CmfData data(count);
+	}
+};
+
+struct CmfData (uint32 count) {
+	SetBackColor(0x458bed);
+	char magic[4];
+	uint16 framesCount;
+	uint16 boneCount;
+	uint32 u_2;
+	// Printf("%d\n", u_2);
+	char name[64];
+	byte pad[32];
+	Vec3 pos<read=readVec3>;
+	Vec4 rot<read=readVec4>;
+	Vec3 scale<read=readVec3>;
+
+	uint32 framesOffset;
+	uint32 keyFramesOffset;
+	uint32 null;
+	if (FTell() + 4 <= framesOffset)
+		uint32 boneNamesOffset;
+	SetBackColor(0x0);
+	
+	FSeek(startof(this) + framesOffset);
+	KeyFrameData boneKeyFramesData1(boneCount, 2)<bgcolor=0x09b01f>;
+
+	FSeek(startof(this) + keyFramesOffset);
+	KeyFrameData boneKeyFramesData2(boneCount, 3)<bgcolor=0xeb6d1e>;
+
+	if (exists(boneNamesOffset)) {
+		FSeek(startof(this) + boneNamesOffset);
+		String boneNames(32)[boneCount]<read=readString,optimize=false>;
+	}
+};
+
+struct KeyFrameData (uint32 count, int vecSize_) {
+	local int vecSize = vecSize_;
+	uint32 offsets[count];
+	local int i;
+	for (i = 0; i < count; i++) {
+		if (offsets[i] != 0)
+			FSeek(startof(this) + offsets[i]);
+		struct Frames {
+			if (offsets[i] != 0) {
+				uint16 framesCount;
+				if (framesCount > 0) {	// only so that 010 Editor doesn't display warnings
+					uint16 indices[framesCount];
+					local int align = 4 - (FTell() % 4);
+					if (align != 4)
+						byte pad[align];
+					if (vecSize == 2)
+						Vec2 values[framesCount]<read=readVec2>;
+					else if (vecSize == 3)
+						Vec3 values[framesCount]<read=readVec3>;
+					else {
+						Printf("Invalid vecSize: %d\n", vecSize);
+						Exit(1);
+					}
+				}
+			}
+		} frames;
+	}
+};
+
+struct String(uint32 size) {
+	char str[size];
+};
+
+struct Vec2 {
+	float x;
+	float y;
+};
+struct Vec3 {
+	float x;
+	float y;
+	float z;
+};
+struct Vec4 {
+	float x;
+	float y;
+	float z;
+	float w;
+};
+
+
+KPK content;
